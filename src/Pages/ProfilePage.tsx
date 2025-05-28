@@ -9,7 +9,6 @@ import ReviewList from '../components/ReviewList.tsx';
 import axios from 'axios';
 import { User } from 'lucide-react';
 
-
 type UserWithProfile = {
   profilePicture?: string;
   preferences?: string;
@@ -33,6 +32,18 @@ const genreToId: { [key: string]: number } = {
 const BASE_POSTER_URL = 'https://image.tmdb.org/t/p/original/';
 const TMDB_API_KEY = '7f2f096d8066b9fb6e0fa92eb590fa7e';
 const TMDB_BASE_URL = 'https://api.themoviedb.org/3';
+
+const getStarRating = (rating: number) => {
+  const stars: JSX.Element[] = [];
+  for (let i = 1; i <= 5; i++) {
+    stars.push(
+      <span key={i} className="text-yellow-400">
+        {i <= rating ? '★' : '☆'}
+      </span>
+    );
+  }
+  return stars;
+};
 
 const ProfilePage = () => {
   const authContext = useContext(AuthContext);
@@ -75,7 +86,6 @@ const ProfilePage = () => {
       return [];
     }
   };
-
 
   useEffect(() => {
     if (!user?.uid) return;
@@ -130,7 +140,6 @@ const ProfilePage = () => {
     };
   }, [user?.uid]);
 
-  // Fetch recommendations when selectedGenres change
   useEffect(() => {
     const fetchAndSetRecommendations = async () => {
       if (selectedGenres.length === 0) {
@@ -143,7 +152,6 @@ const ProfilePage = () => {
     fetchAndSetRecommendations();
   }, [selectedGenres]);
 
-  // Handle profile picture input changes
   const handleProfilePictureChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!e.target.files || e.target.files.length === 0) return;
 
@@ -160,7 +168,6 @@ const ProfilePage = () => {
     setIsFileTooLarge(false);
     setProfilePicture(file);
   };
-
 
   const handleSave = async () => {
     if (!user?.uid) return;
@@ -256,34 +263,25 @@ const ProfilePage = () => {
               type="file"
               accept="image/*"
               onChange={handleProfilePictureChange}
-              className="text-gray-700 text-sm"
+              className="file-input file-input-bordered w-full max-w-xs text-black"
             />
-            <button
-              onClick={handleSave}
-              disabled={isLoading}
-              className={`bg-blue-500 text-white px-8 py-3 rounded-lg font-bold hover:bg-blue-400 transition-all duration-300 ${
-                isLoading ? 'opacity-50 cursor-not-allowed' : ''
-              }`}
-            >
-              {isLoading ? 'Saving...' : 'Update Profile'}
-            </button>
           </div>
         </div>
 
-        <div className="preferences mb-8">
-          <h2 className="text-2xl font-semibold mb-4">Preferences</h2>
-          <div className="flex flex-wrap gap-4 justify-center">
+        <div className="genre-preferences mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Select your favorite genres</h2>
+          <div className="genres grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
             {Object.keys(genreToId).map((genre) => (
               <button
                 key={genre}
-                className={`px-5 py-2 rounded-lg ${
-                  selectedGenres.includes(genre) ? 'bg-blue-500 text-white' : 'bg-gray-300 text-black'
-                } hover:bg-blue-600`}
-                onClick={() =>
+                className={`px-3 py-2 rounded-full text-sm ${
+                  selectedGenres.includes(genre) ? 'bg-blue-600 text-white' : 'bg-gray-200 text-black'
+                }`}
+                onClick={() => {
                   setSelectedGenres((prev) =>
                     prev.includes(genre) ? prev.filter((g) => g !== genre) : [...prev, genre]
-                  )
-                }
+                  );
+                }}
               >
                 {genre}
               </button>
@@ -291,96 +289,90 @@ const ProfilePage = () => {
           </div>
         </div>
 
-       <div className="reviews-section mb-8 bg-gray-900 border border-gray-300 rounded-lg p-6 shadow-sm">
-         <h2 className="text-2xl font-semibold mb-4 text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]">
-           Your Reviews
-         </h2>
-         <div className="text-white drop-shadow-[0_0_8px_rgba(59,130,246,0.8)]">
-           <ReviewList userId={user?.uid || ''} />
-         </div>
-       </div>
-      </div>
-
-      <div className="right-section w-full lg:w-1/3 flex flex-col gap-8">
-        <div>
-          <h2 className="text-2xl font-semibold mb-6">Your Rated Movies</h2>
-          <ul className="space-y-4 max-h-[300px] overflow-y-auto">
-            {ratedMovies.length === 0 && <p className="text-gray-500">You haven't rated any movies yet.</p>}
-            {ratedMovies.map((movie) => (
-              <li key={movie.id} className="flex items-center gap-4 cursor-pointer" onClick={() => handleMovieClick(movie.id)}>
-                <img
-                  src={movie.posterPath}
-                  alt={movie.title}
-                  className="w-14 h-20 rounded-md object-cover"
-                />
-                <div>
-                  <h3 className="font-semibold">{movie.title}</h3>
-                  <p>Rating: {movie.rating}/5</p>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
-          <h2 className="text-2xl font-semibold mb-6">Your Watchlist</h2>
-          <ul className="space-y-4 max-h-[300px] overflow-y-auto">
-            {watchlist.length === 0 && <p className="text-gray-500">Your watchlist is empty.</p>}
-            {watchlist.map((movie) => (
-              <li key={movie.id} className="flex items-center gap-4">
-                <img
-                  src={movie.posterPath}
-                  alt={movie.title}
-                  className="w-14 h-20 rounded-md object-cover cursor-pointer"
-                  onClick={() => handleMovieClick(movie.id)}
-                />
-                <div className="flex justify-between items-center w-full">
-                  <h3 className="font-semibold cursor-pointer" onClick={() => handleMovieClick(movie.id)}>
-                    {movie.title}
-                  </h3>
-                  <button
-                    onClick={() => handleRemoveFromWatchlist(movie.id)}
-                    className="bg-red-500 text-white px-3 py-1 rounded-md hover:bg-red-600 transition"
-                  >
-                    Remove
-                  </button>
-                </div>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        <div>
+        <div className="action-buttons flex gap-6 mb-8">
           <button
             onClick={() => setShowRecommendations(!showRecommendations)}
-            className="bg-blue-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-400 transition"
+            className="btn btn-primary bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700"
           >
-            {showRecommendations ? 'Hide' : 'Show'} Recommendations
+            {showRecommendations ? 'Hide Recommendations' : 'Show Recommendations'}
           </button>
-          {showRecommendations && (
-            <ul className="mt-4 grid grid-cols-2 gap-4 max-h-[400px] overflow-y-auto">
-              {recommendations.length === 0 && <p className="col-span-2 text-center text-gray-500">No recommendations available. Select some genres first.</p>}
-              {recommendations.map((movie) => (
-                <li
-                  key={movie.id}
-                  className="cursor-pointer border border-gray-300 rounded-lg overflow-hidden hover:shadow-lg"
-                  onClick={() => handleMovieClick(movie.id)}
-                >
-                  <img src={movie.posterPath} alt={movie.title} className="w-full h-40 object-cover" />
-                  <h3 className="p-2 font-semibold">{movie.title}</h3>
-                </li>
-              ))}
-            </ul>
-          )}
+
+          <button
+            onClick={handleSave}
+            className={`btn btn-primary bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 ${
+              isLoading ? 'opacity-50 cursor-not-allowed' : ''
+            }`}
+            disabled={isLoading}
+          >
+            {isLoading ? 'Saving...' : 'Save Changes'}
+          </button>
+
+          <button
+            onClick={handleLogout}
+            className="btn btn-secondary bg-red-600 text-white px-6 py-3 rounded-lg hover:bg-red-700"
+          >
+            Logout
+          </button>
         </div>
 
-        <button
-          onClick={handleLogout}
-          className="bg-red-600 text-white px-6 py-3 rounded-lg font-bold hover:bg-red-700 transition mt-auto"
-        >
-          Log Out
-        </button>
+        {/* Rated Movies Section */}
+        <div className="rated-movies mb-8">
+          <h2 className="text-2xl font-semibold mb-4">Your Rated Movies</h2>
+          {ratedMovies.length === 0 ? (
+            <p>No rated movies found.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {ratedMovies.map((movie) => (
+                <div
+                  key={movie.id}
+                  className="movie-card cursor-pointer"
+                  onClick={() => handleMovieClick(movie.id)}
+                >
+                  <img
+                    src={movie.posterPath}
+                    alt={movie.title}
+                    className="w-full h-auto rounded-lg mb-2"
+                  />
+                  <p className="text-lg font-semibold truncate">{movie.title}</p>
+                  <p className="text-yellow-400 text-xl">{getStarRating(movie.rating)}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
+      
+
+      <div className="right-section w-full lg:w-1/3 bg-gray-100 rounded-lg p-4 overflow-y-auto max-h-[80vh]">
+        <h2 className="text-2xl font-semibold mb-6">Your Reviews</h2>
+        {/* Pass userId so it shows reviews by this user */}
+        <ReviewList userId={user?.uid || ''} />
+      </div>
+      {showRecommendations && (
+        <div className="recommendations w-full lg:w-1/3 bg-gray-100 rounded-lg p-4 overflow-y-auto max-h-[80vh]">
+          <h2 className="text-2xl font-semibold mb-6">Recommended Movies</h2>
+          {recommendations.length === 0 ? (
+            <p>No recommendations available based on your selected genres.</p>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
+              {recommendations.map((movie) => (
+                <div
+                  key={movie.id}
+                  className="movie-card cursor-pointer"
+                  onClick={() => handleMovieClick(movie.id)}
+                >
+                  <img
+                    src={movie.posterPath}
+                    alt={movie.title}
+                    className="w-full h-auto rounded-lg mb-2"
+                  />
+                  <p className="text-lg font-semibold truncate">{movie.title}</p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 };

@@ -213,6 +213,7 @@ const MovieList = () => {
       genre: ["Action", "Crime", "Drama"],
       videoUrl: "https://www.youtube.com/embed/EXeTwQWrcwY"
     },
+    
     {
       id: 335983,
       title: "Venom",
